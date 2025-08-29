@@ -1,0 +1,61 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Punjab" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[69.35, 32.02], [70.75, 31.5], [72.0, 31.0], [73.5, 30.5], [74.5, 31.5], [75.5, 32.5], [74.0, 33.5], [72.0, 34.0], [70.5, 33.5], [69.35, 32.02]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Sindh" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[67.0, 25.0], [68.5, 25.0], [69.5, 26.0], [70.0, 27.0], [70.5, 28.5], [69.0, 28.5], [68.0, 27.5], [67.0, 26.5], [67.0, 25.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Khyber Pakhtunkhwa" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[71.0, 35.0], [72.0, 35.0], [73.0, 34.5], [72.0, 34.0], [71.0, 34.0], [70.0, 34.5], [71.0, 35.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Balochistan" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[61.0, 25.0], [63.0, 25.0], [65.0, 26.0], [66.5, 27.5], [66.0, 29.0], [64.0, 29.5], [62.0, 28.5], [61.0, 27.0], [61.0, 25.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Gilgit-Baltistan" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[74.0, 37.0], [75.0, 37.5], [76.0, 36.5], [75.0, 35.5], [74.0, 35.5], [73.5, 36.5], [74.0, 37.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Azad Jammu and Kashmir" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[73.5, 34.5], [74.5, 34.5], [75.0, 34.0], [74.0, 33.5], [73.5, 34.0], [73.5, 34.5]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Islamabad Capital Territory" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[72.8, 33.5], [73.2, 33.5], [73.2, 33.9], [72.8, 33.9], [72.8, 33.5]]]
+      }
+    }
+  ]
+}

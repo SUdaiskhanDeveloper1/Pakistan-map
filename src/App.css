@@ -1,0 +1,26 @@
+.legend {
+  position: absolute;
+  top: 350px;
+  right: 400px;
+  background: white;
+  padding: 4px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+.legend-item .box {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+.legend-item .box.mining {
+  background-color: green;
+}
+.legend-item .box.exploration {
+  background-color: red;
+}
