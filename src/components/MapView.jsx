@@ -1,58 +1,32 @@
-import React, { useEffect, useRef } from "react";
+
+import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import { islamabadCoords } from "../data/constants";
 import { polygons } from "../data/polygons";
+import MiniMap from "./MiniMap";
+import { createRoot } from "react-dom/client";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
+
 const MapView = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
+  const popupRef = useRef(new mapboxgl.Popup({ closeButton: false, closeOnClick: false }));
+  const [hoveredPolygon, setHoveredPolygon] = useState(null);
 
   useEffect(() => {
     if (map.current) return;
-
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/light-v11",
       center: [71, 30],
-      zoom: 4.5,
+      zoom: 4.6,
+      interactive: false,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-
     map.current.on("load", () => {
-      map.current.addSource("country-boundaries", {
-        type: "vector",
-        url: "mapbox://mapbox.country-boundaries-v1",
-      });
-
-      map.current.addLayer({
-        id: "pakistan-fill",
-        type: "fill",
-        source: "country-boundaries",
-        "source-layer": "country_boundaries",
-        filter: ["==", ["get", "iso_3166_1_alpha_3"], "PAK"],
-        paint: {
-          "fill-color": "white",
-          "fill-opacity": 0,
-        },
-      });
-
-      map.current.addLayer({
-        id: "pakistan-outline",
-        type: "line",
-        source: "country-boundaries",
-        "source-layer": "country_boundaries",
-        filter: ["==", ["get", "iso_3166_1_alpha_3"], "PAK"],
-        paint: {
-          "line-color": "black",
-          "line-width": 2,
-        },
-      });
-
+     
       map.current.addSource("polygons", { type: "geojson", data: polygons });
-
       map.current.addLayer({
         id: "polygon-fill",
         type: "fill",
@@ -62,7 +36,6 @@ const MapView = () => {
           "fill-opacity": 0.5,
         },
       });
-
       map.current.addLayer({
         id: "polygon-outline",
         type: "line",
@@ -73,46 +46,60 @@ const MapView = () => {
         },
       });
 
+    
+      map.current.addSource("country-boundaries", {
+        type: "vector",
+        url: "mapbox://mapbox.country-boundaries-v1",
+      });
       map.current.addLayer({
-        id: "polygon-labels",
-        type: "symbol",
-        source: "polygons",
-        layout: {
-          "text-field": ["get", "name"],
-          "text-size": 0.1,
-          "text-offset": [0, 0.1],
-          "text-anchor": "top",
-        },
+        id: "pakistan-outer-border",
+        type: "line",
+        source: "country-boundaries",
+        "source-layer": "country_boundaries",
+        paint: { "line-color": "#000000", "line-width": 2.5 },
+        filter: ["==", "iso_3166_1_alpha_3", "PAK"],
+      });
+      map.current.addSource("admin-boundaries", {
+        type: "vector",
+        url: "mapbox://mapbox.mapbox-admin-boundaries-v3",
+      });
+      map.current.addLayer({
+        id: "pakistan-inner-borders",
+        type: "line",
+        source: "admin-boundaries",
+        "source-layer": "admin1",
+        paint: { "line-color": "#666666", "line-width": 1, "line-dasharray": [3, 2] },
+        filter: ["==", "iso_3166_1", "PK"],
       });
 
-      map.current.on("click", "polygon-fill", (e) => {
-        const name = e.features[0].properties.name;
-        new mapboxgl.Popup()
+      
+      map.current.on("mousemove", "polygon-fill", (e) => {
+        if (!e.features.length) return;
+        const feature = e.features[0];
+        setHoveredPolygon(feature);
+
+        popupRef.current
           .setLngLat(e.lngLat)
-          .setHTML(`<h3>📍 ${name}</h3>`)
+          .setHTML('<div id="popup-container" style="width:250px;height:200px"></div>')
           .addTo(map.current);
+
+        const container = document.getElementById("popup-container");
+        if (container) {
+          const root = createRoot(container);
+          root.render(
+            <div>
+              <h3>{feature.properties.name}</h3>
+              <MiniMap polygon={feature} />
+            </div>
+          );
+        }
       });
 
-      map.current.on("mouseenter", "polygon-fill", () => {
-        map.current.getCanvas().style.cursor = "pointer";
-      });
+     
       map.current.on("mouseleave", "polygon-fill", () => {
-        map.current.getCanvas().style.cursor = "";
+        popupRef.current.remove();
+        setHoveredPolygon(null);
       });
-
-      new mapboxgl.Marker({ color: "blue" })
-        .setLngLat(islamabadCoords)
-        .setPopup(
-          new mapboxgl.Popup().setHTML("<b>My Location</b><br/>I-9/2 Islamabad")
-        )
-        .addTo(map.current);
-
-      const bounds = new mapboxgl.LngLatBounds();
-      polygons.features.forEach((feature) =>
-        feature.geometry.coordinates[0].forEach((coord) => bounds.extend(coord))
-      );
-      bounds.extend(islamabadCoords);
-      map.current.fitBounds(bounds, { padding: 50 });
     });
   }, []);
 
