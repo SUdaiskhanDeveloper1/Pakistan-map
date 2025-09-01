@@ -52,6 +52,7 @@ const MapView = () => {
         type: "vector",
         url: "mapbox://mapbox.country-boundaries-v1",
       });
+      // borders layer of pakistan .
       map.current.addLayer({
         id: "pakistan-outer-border",
         type: "line",
