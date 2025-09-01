@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { polygons } from "../data/polygons";
@@ -11,8 +10,10 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 const MapView = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const popupRef = useRef(new mapboxgl.Popup({ closeButton: false, closeOnClick: false }));
-  const [hoveredPolygon, setHoveredPolygon] = useState(null);
+  const popupRef = useRef(
+    new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
+  );
+  const [, setHoveredPolygon] = useState(null);
 
   useEffect(() => {
     if (map.current) return;
@@ -25,7 +26,6 @@ const MapView = () => {
     });
 
     map.current.on("load", () => {
-     
       map.current.addSource("polygons", { type: "geojson", data: polygons });
       map.current.addLayer({
         id: "polygon-fill",
@@ -41,12 +41,11 @@ const MapView = () => {
         type: "line",
         source: "polygons",
         paint: {
-          "line-color": "#0a1234ff",
+          "line-color": "black",
           "line-width": 1.2,
         },
       });
 
-    
       map.current.addSource("country-boundaries", {
         type: "vector",
         url: "mapbox://mapbox.country-boundaries-v1",
@@ -68,11 +67,83 @@ const MapView = () => {
         type: "line",
         source: "admin-boundaries",
         "source-layer": "admin1",
-        paint: { "line-color": "#666666", "line-width": 1, "line-dasharray": [3, 2] },
+        paint: {
+          "line-color": "#666666",
+          "line-width": 1,
+          "line-dasharray": [3, 2],
+        },
         filter: ["==", "iso_3166_1", "PK"],
       });
+      map.current.addSource("crosshair-x", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.current.addSource("crosshair-y", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
 
-      
+      map.current.addLayer({
+        id: "crosshair-x-line",
+        type: "line",
+        source: "crosshair-x",
+        paint: {
+          "line-color": "red",
+          "line-width": 1,
+          "line-dasharray": [2, 2],
+        },
+      });
+
+      map.current.addLayer({
+        id: "crosshair-y-line",
+        type: "line",
+        source: "crosshair-y",
+        paint: {
+          "line-color": "red",
+          "line-width": 1,
+          "line-dasharray": [2, 2],
+        },
+      });
+
+      map.current.on("mousemove", (e) => {
+        const { lng, lat } = e.lngLat;
+
+        const xLine = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              geometry: {
+                type: "LineString",
+                coordinates: [
+                  [-180, lat],
+                  [180, lat],
+                ],
+              },
+            },
+          ],
+        };
+
+        const yLine = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              geometry: {
+                type: "LineString",
+                coordinates: [
+                  [lng, -90],
+                  [lng, 90],
+                ],
+              },
+            },
+          ],
+        };
+
+        map.current.getSource("crosshair-x").setData(xLine);
+        map.current.getSource("crosshair-y").setData(yLine);
+      });
+
       map.current.on("mousemove", "polygon-fill", (e) => {
         if (!e.features.length) return;
         const feature = e.features[0];
@@ -80,7 +151,9 @@ const MapView = () => {
 
         popupRef.current
           .setLngLat(e.lngLat)
-          .setHTML('<div id="popup-container" style="width:250px;height:200px"></div>')
+          .setHTML(
+            '<div id="popup-container" style="width:250px;height:200px"></div>'
+          )
           .addTo(map.current);
 
         const container = document.getElementById("popup-container");
@@ -95,7 +168,6 @@ const MapView = () => {
         }
       });
 
-     
       map.current.on("mouseleave", "polygon-fill", () => {
         popupRef.current.remove();
         setHoveredPolygon(null);

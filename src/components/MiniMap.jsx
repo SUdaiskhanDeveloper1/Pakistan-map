@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 
@@ -13,7 +12,7 @@ const MiniMap = ({ polygon }) => {
 
     map.current = new mapboxgl.Map({
       container: miniMapContainer.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/light-v9",
       interactive: false,
     });
 
@@ -23,20 +22,36 @@ const MiniMap = ({ polygon }) => {
         id: "mini-polygon-fill",
         type: "fill",
         source: "mini-polygon",
-        paint: { "fill-color": "#f00", "fill-opacity": 0.5 },
+        paint: {
+          "fill-color": ["get", "color"],
+          "fill-opacity": 0.5,
+        },
       });
 
       const bounds = polygon.geometry.coordinates[0].reduce(
         (b, coord) => b.extend(coord),
-        new mapboxgl.LngLatBounds(polygon.geometry.coordinates[0][0], polygon.geometry.coordinates[0][0])
+        new mapboxgl.LngLatBounds(
+          polygon.geometry.coordinates[0][0],
+          polygon.geometry.coordinates[0][0]
+        )
       );
       map.current.fitBounds(bounds, { padding: 15 });
     });
 
-    return () => map.current?.remove();
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
   }, [polygon]);
 
-  return <div ref={miniMapContainer} style={{ width: "90%", height: "150px", borderRadius: "6px" }} />;
+  return (
+    <div
+      ref={miniMapContainer}
+      style={{ width: "90%", height: "150px", borderRadius: "6px" }}
+    />
+  );
 };
 
 export default MiniMap;
