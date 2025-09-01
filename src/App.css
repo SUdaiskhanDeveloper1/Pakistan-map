@@ -1,10 +1,10 @@
 .legend {
-  position: absolute;
-  top: 300px;
-  right: 410px;
+  position: fixed;
+  top: 2px;
+  right: 5px;
   background: white;
-  padding: 4px;
-  border-radius: 5px;
+  padding: 8px;
+  border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   text-align: center;
 }

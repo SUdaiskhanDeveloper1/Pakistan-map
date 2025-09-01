@@ -10,6 +10,11 @@ const MiniMap = ({ polygon }) => {
   useEffect(() => {
     if (!polygon) return;
 
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
+
     map.current = new mapboxgl.Map({
       container: miniMapContainer.current,
       style: "mapbox://styles/mapbox/light-v9",
@@ -38,6 +43,7 @@ const MiniMap = ({ polygon }) => {
       map.current.fitBounds(bounds, { padding: 15 });
     });
 
+    
     return () => {
       if (map.current) {
         map.current.remove();

@@ -14,6 +14,8 @@ const MapView = () => {
     new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
   );
   const [, setHoveredPolygon] = useState(null);
+  const delayTimeout = useRef(null);
+  const canShowPopup = useRef(true);
 
   useEffect(() => {
     if (map.current) return;
@@ -146,31 +148,47 @@ const MapView = () => {
 
       map.current.on("mousemove", "polygon-fill", (e) => {
         if (!e.features.length) return;
+        if (!canShowPopup.current) return; 
         const feature = e.features[0];
-        setHoveredPolygon(feature);
-
-        popupRef.current
-          .setLngLat(e.lngLat)
-          .setHTML(
-            '<div id="popup-container" style="width:250px;height:200px"></div>'
-          )
-          .addTo(map.current);
-
-        const container = document.getElementById("popup-container");
-        if (container) {
-          const root = createRoot(container);
-          root.render(
-            <div>
-              <h3>{feature.properties.name}</h3>
-              <MiniMap polygon={feature} />
-            </div>
-          );
+        
+        if (delayTimeout.current) {
+          clearTimeout(delayTimeout.current);
+          delayTimeout.current = null;
         }
+        setHoveredPolygon((prev) => {
+         
+          if (prev && prev.id === feature.id) return prev;
+
+          popupRef.current
+            .setLngLat(e.lngLat)
+            .setHTML(
+              '<div id="popup-container" style="width:250px;height:200px"></div>'
+            )
+            .addTo(map.current);
+
+          const container = document.getElementById("popup-container");
+          if (container) {
+            const root = createRoot(container);
+            root.render(
+              <div>
+                <h3>{feature.properties.name}</h3>
+                <MiniMap polygon={feature} />
+              </div>
+            );
+          }
+          return feature;
+        });
       });
 
       map.current.on("mouseleave", "polygon-fill", () => {
         popupRef.current.remove();
         setHoveredPolygon(null);
+    
+        canShowPopup.current = false;
+        delayTimeout.current = setTimeout(() => {
+          canShowPopup.current = true;
+          delayTimeout.current = null;
+        }, 1500);
       });
     });
   }, []);
