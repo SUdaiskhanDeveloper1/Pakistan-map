@@ -1,6 +1,8 @@
+import "../App.css";
 import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { polygons } from "../data/polygons";
+import { scalePolygon } from "../utils/scalePolygon";
 import MiniMap from "./MiniMap";
 import { createRoot } from "react-dom/client";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -14,6 +16,7 @@ const MapView = () => {
     new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
   );
   const [, setHoveredPolygon] = useState(null);
+  const originalPolygons = useRef(polygons);
   const delayTimeout = useRef(null);
   const canShowPopup = useRef(true);
 
@@ -21,14 +24,57 @@ const MapView = () => {
     if (map.current) return;
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/streets-v12", // ✅ Style with cities
       center: [71, 30],
-      zoom: 4.6,
-      interactive: false,
+      zoom: 4.7,
+      interactive: true, // Enable interaction for zoom controls
     });
 
+    // Add zoom in/out controls
+    map.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+
+    // Add custom class to navigation control for custom positioning
+    setTimeout(() => {
+      const navControl = document.querySelector('.mapboxgl-ctrl-top-right');
+      if (navControl) {
+        navControl.style.right = '0';
+        navControl.style.top = '10px';
+        navControl.style.left = 'unset';
+      }
+    }, 500);
+
     map.current.on("load", () => {
-      map.current.addSource("polygons", { type: "geojson", data: polygons });
+      // Scale polygons before adding
+      const scaledFeatures = polygons.features.map((f, idx) => {
+        const coords = f.geometry.coordinates;
+        let area = 0;
+        if (coords && coords[0] && coords[0].length > 2) {
+          for (let i = 0, len = coords[0].length - 1; i < len; i++) {
+            area += coords[0][i][0] * coords[0][i + 1][1];
+            area -= coords[0][i + 1][0] * coords[0][i][1];
+          }
+          area = Math.abs(area / 2);
+        }
+        if (!area) return f;
+
+        return {
+          ...f,
+          geometry: {
+            ...f.geometry,
+            coordinates: scalePolygon(f.geometry.coordinates, 3),
+          },
+        };
+      });
+
+      const scaledPolygons = { ...polygons, features: scaledFeatures };
+      map.current.addSource("polygons", {
+        type: "geojson",
+        data: scaledPolygons,
+      });
+
+      originalPolygons.current = scaledPolygons;
+
+      // Polygon fill + outline
       map.current.addLayer({
         id: "polygon-fill",
         type: "fill",
@@ -38,6 +84,7 @@ const MapView = () => {
           "fill-opacity": 0.5,
         },
       });
+
       map.current.addLayer({
         id: "polygon-outline",
         type: "line",
@@ -48,11 +95,33 @@ const MapView = () => {
         },
       });
 
+      // Polygon labels (your data) but BELOW city names
+      map.current.addLayer(
+        {
+          id: "polygon-label",
+          type: "symbol",
+          source: "polygons",
+          layout: {
+            "text-field": ["get", "name"],
+            "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+            "text-size": 10,
+            "text-anchor": "center",
+          },
+          paint: {
+            "text-color": "#d32f2f", // red so you can distinguish from city names
+            "text-halo-color": "#fff",
+            "text-halo-width": 1.5,
+          },
+        },
+        "settlement-label" 
+      );
+
+      // Outer border of Pakistan
       map.current.addSource("country-boundaries", {
         type: "vector",
         url: "mapbox://mapbox.country-boundaries-v1",
       });
-      // borders layer of pakistan .
+
       map.current.addLayer({
         id: "pakistan-outer-border",
         type: "line",
@@ -61,10 +130,13 @@ const MapView = () => {
         paint: { "line-color": "#000000", "line-width": 2.5 },
         filter: ["==", "iso_3166_1_alpha_3", "PAK"],
       });
+
+      // Inner admin boundaries (provinces)
       map.current.addSource("admin-boundaries", {
         type: "vector",
         url: "mapbox://mapbox.mapbox-admin-boundaries-v3",
       });
+
       map.current.addLayer({
         id: "pakistan-inner-borders",
         type: "line",
@@ -77,6 +149,8 @@ const MapView = () => {
         },
         filter: ["==", "iso_3166_1", "PK"],
       });
+
+      // Crosshair sources
       map.current.addSource("crosshair-x", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -108,6 +182,7 @@ const MapView = () => {
         },
       });
 
+      // Crosshair update
       map.current.on("mousemove", (e) => {
         const { lng, lat } = e.lngLat;
 
@@ -147,33 +222,43 @@ const MapView = () => {
         map.current.getSource("crosshair-y").setData(yLine);
       });
 
+      // Polygon popup with minimap
       map.current.on("mousemove", "polygon-fill", (e) => {
         if (!e.features.length) return;
-        if (!canShowPopup.current) return; 
+        if (!canShowPopup.current) return;
         const feature = e.features[0];
-        
+
         if (delayTimeout.current) {
           clearTimeout(delayTimeout.current);
           delayTimeout.current = null;
         }
+
         setHoveredPolygon((prev) => {
-         
           if (prev && prev.id === feature.id) return prev;
 
           popupRef.current
             .setLngLat(e.lngLat)
             .setHTML(
-              '<div id="popup-container" style="width:250px;height:200px"></div>'
+              '<div id="popup-container" style="width:220px;height:180px"></div>'
             )
             .addTo(map.current);
-
+             // for zoom in 
           const container = document.getElementById("popup-container");
           if (container) {
             const root = createRoot(container);
+            const coords = feature.geometry.coordinates;
+            const miniPolygon = {
+              type: "Feature",
+              properties: { name: feature.properties.name, color: "black" },
+              geometry: {
+                type: "Polygon",
+                coordinates: scalePolygon(coords, 0.02),
+              },
+            };
             root.render(
               <div>
                 <h3>{feature.properties.name}</h3>
-                <MiniMap polygon={feature} />
+                <MiniMap polygon={miniPolygon} style="mapbox://styles/mapbox/streets-v10" />
               </div>
             );
           }
@@ -184,13 +269,36 @@ const MapView = () => {
       map.current.on("mouseleave", "polygon-fill", () => {
         popupRef.current.remove();
         setHoveredPolygon(null);
-    
+        map.current.getSource("polygons").setData(originalPolygons.current);
+
         canShowPopup.current = false;
         delayTimeout.current = setTimeout(() => {
           canShowPopup.current = true;
           delayTimeout.current = null;
-        }, 1500);
+        }, 1000);
       });
+
+      // ✅ Force all Pakistani cities/towns/villages visible
+      const settlementLayer = map.current.getStyle().layers.find(
+        (l) => l.id === "settlement-label"
+      );
+
+      if (settlementLayer) {
+        map.current.setLayoutProperty("settlement-label", "text-size", [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          4, 10, 
+          8, 14, 
+          12, 18 
+        ]);
+
+        // Filter to Pakistan cities only
+        map.current.setFilter("settlement-label", [
+          "all",
+          ["==", ["get", "iso_3166_1"], "PK"]
+        ]);
+      }
     });
   }, []);
 
