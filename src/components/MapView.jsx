@@ -24,16 +24,16 @@ const MapView = () => {
     if (map.current) return;
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12", // ✅ Style with cities
+      style: "mapbox://styles/mapbox/streets-v12", 
       center: [71, 30],
       zoom: 4.7,
-      interactive: true, // Enable interaction for zoom controls
+      interactive: true, 
     });
 
-    // Add zoom in/out controls
+    
     map.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
-    // Add custom class to navigation control for custom positioning
+   
     setTimeout(() => {
       const navControl = document.querySelector('.mapboxgl-ctrl-top-right');
       if (navControl) {
@@ -44,7 +44,7 @@ const MapView = () => {
     }, 500);
 
     map.current.on("load", () => {
-      // Scale polygons before adding
+      
       const scaledFeatures = polygons.features.map((f, idx) => {
         const coords = f.geometry.coordinates;
         let area = 0;
@@ -74,7 +74,7 @@ const MapView = () => {
 
       originalPolygons.current = scaledPolygons;
 
-      // Polygon fill + outline
+      
       map.current.addLayer({
         id: "polygon-fill",
         type: "fill",
@@ -95,7 +95,7 @@ const MapView = () => {
         },
       });
 
-      // Polygon labels (your data) but BELOW city names
+    
       map.current.addLayer(
         {
           id: "polygon-label",
@@ -108,7 +108,7 @@ const MapView = () => {
             "text-anchor": "center",
           },
           paint: {
-            "text-color": "#d32f2f", // red so you can distinguish from city names
+            "text-color": "#d32f2f", 
             "text-halo-color": "#fff",
             "text-halo-width": 1.5,
           },
@@ -116,7 +116,7 @@ const MapView = () => {
         "settlement-label" 
       );
 
-      // Outer border of Pakistan
+      
       map.current.addSource("country-boundaries", {
         type: "vector",
         url: "mapbox://mapbox.country-boundaries-v1",
@@ -131,7 +131,7 @@ const MapView = () => {
         filter: ["==", "iso_3166_1_alpha_3", "PAK"],
       });
 
-      // Inner admin boundaries (provinces)
+      
       map.current.addSource("admin-boundaries", {
         type: "vector",
         url: "mapbox://mapbox.mapbox-admin-boundaries-v3",
@@ -150,7 +150,7 @@ const MapView = () => {
         filter: ["==", "iso_3166_1", "PK"],
       });
 
-      // Crosshair sources
+      
       map.current.addSource("crosshair-x", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -182,7 +182,7 @@ const MapView = () => {
         },
       });
 
-      // Crosshair update
+      
       map.current.on("mousemove", (e) => {
         const { lng, lat } = e.lngLat;
 
@@ -222,7 +222,7 @@ const MapView = () => {
         map.current.getSource("crosshair-y").setData(yLine);
       });
 
-      // Polygon popup with minimap
+     
       map.current.on("mousemove", "polygon-fill", (e) => {
         if (!e.features.length) return;
         if (!canShowPopup.current) return;
@@ -242,7 +242,7 @@ const MapView = () => {
               '<div id="popup-container" style="width:220px;height:180px"></div>'
             )
             .addTo(map.current);
-             // for zoom in 
+         
           const container = document.getElementById("popup-container");
           if (container) {
             const root = createRoot(container);
@@ -278,7 +278,7 @@ const MapView = () => {
         }, 1000);
       });
 
-      // ✅ Force all Pakistani cities/towns/villages visible
+   
       const settlementLayer = map.current.getStyle().layers.find(
         (l) => l.id === "settlement-label"
       );
@@ -293,7 +293,7 @@ const MapView = () => {
           12, 18 
         ]);
 
-        // Filter to Pakistan cities only
+       
         map.current.setFilter("settlement-label", [
           "all",
           ["==", ["get", "iso_3166_1"], "PK"]

@@ -17,7 +17,7 @@ const MiniMap = ({ polygon, style = "mapbox://styles/mapbox/streets-v10" }) => {
 
     map.current = new mapboxgl.Map({
       container: miniMapContainer.current,
-      style: style, // Use the same style as the main map
+      style: style, 
       interactive: false,
     });
 
@@ -46,7 +46,7 @@ const MiniMap = ({ polygon, style = "mapbox://styles/mapbox/streets-v10" }) => {
     const handleMouseEnter = () => {
       if (map.current) {
         const maxZoom = map.current.getMaxZoom ? map.current.getMaxZoom() : 22;
-        map.current.zoomTo(maxZoom, { duration: 900 }); // Maximum zoom-in
+        map.current.zoomTo(maxZoom, { duration: 900 }); 
       }
     };
     
