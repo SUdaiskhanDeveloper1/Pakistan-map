@@ -37,8 +37,8 @@ const MapView = () => {
     setTimeout(() => {
       const navControl = document.querySelector('.mapboxgl-ctrl-top-right');
       if (navControl) {
-        navControl.style.right = '0';
-        navControl.style.top = '10px';
+        navControl.style.right = '-2px';
+        navControl.style.top = '-7px';
         navControl.style.left = 'unset';
       }
     }, 500);
