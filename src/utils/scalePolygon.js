@@ -1,17 +1,28 @@
-export const scalePolygon = (coordinates, factor = 1.08) => {
-  let coords = coordinates[0];
-  let centroid = coords.reduce(
-    (acc, [lng, lat]) => [
-      acc[0] + lng / coords.length,
-      acc[1] + lat / coords.length,
-    ],
-    [0, 0]
-  );
 
-  let scaled = coords.map(([lng, lat]) => [
-    centroid[0] + (lng - centroid[0]) * factor,
-    centroid[1] + (lat - centroid[1]) * factor,
-  ]);
+export const scalePolygon = (coordinates, scaleFactor) => {
 
-  return [scaled];
+  const scaledCoords = [];
+  
+
+  let centerLng = 0;
+  let centerLat = 0;
+  let totalPoints = 0;
+  
+  coordinates[0].forEach(coord => {
+    centerLng += coord[0];
+    centerLat += coord[1];
+    totalPoints++;
+  });
+  
+  centerLng /= totalPoints;
+  centerLat /= totalPoints;
+
+  const scaledRing = coordinates[0].map(coord => {
+    const dx = (coord[0] - centerLng) * scaleFactor;
+    const dy = (coord[1] - centerLat) * scaleFactor;
+    return [centerLng + dx, centerLat + dy]; 
+  });
+  
+  scaledCoords.push(scaledRing);
+  return scaledCoords;
 };

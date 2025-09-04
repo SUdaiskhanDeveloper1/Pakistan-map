@@ -1,7 +1,7 @@
 .legend {
   position: fixed;
-  top: 2px;
-  right: 5px;
+  top: 0px;
+  left: 0px;
   background: white;
   padding: 8px;
   border-radius: 8px;

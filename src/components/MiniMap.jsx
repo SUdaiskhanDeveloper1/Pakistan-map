@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
-const MiniMap = ({ polygon }) => {
+const MiniMap = ({ polygon, style = "mapbox://styles/mapbox/streets-v10" }) => {
   const miniMapContainer = useRef(null);
   const map = useRef(null);
 
@@ -17,7 +17,7 @@ const MiniMap = ({ polygon }) => {
 
     map.current = new mapboxgl.Map({
       container: miniMapContainer.current,
-      style: "mapbox://styles/mapbox/light-v9",
+      style: style, 
       interactive: false,
     });
 
@@ -40,22 +40,51 @@ const MiniMap = ({ polygon }) => {
           polygon.geometry.coordinates[0][0]
         )
       );
-      map.current.fitBounds(bounds, { padding: 15 });
+      map.current.fitBounds(bounds, { padding: 70 });
     });
 
+    const handleMouseEnter = () => {
+      if (map.current) {
+        const maxZoom = map.current.getMaxZoom ? map.current.getMaxZoom() : 22;
+        map.current.zoomTo(maxZoom, { duration: 900 }); 
+      }
+    };
     
+    const handleMouseLeave = () => {
+      if (map.current) {
+        const bounds = polygon.geometry.coordinates[0].reduce(
+          (b, coord) => b.extend(coord),
+          new mapboxgl.LngLatBounds(
+            polygon.geometry.coordinates[0][0],
+            polygon.geometry.coordinates[0][0]
+          )
+        );
+        map.current.fitBounds(bounds, { padding: 70 });
+      }
+    };
+    
+    const container = miniMapContainer.current;
+    if (container) {
+      container.addEventListener("mouseenter", handleMouseEnter);
+      container.addEventListener("mouseleave", handleMouseLeave);
+    }
+
     return () => {
+      if (container) {
+        container.removeEventListener("mouseenter", handleMouseEnter);
+        container.removeEventListener("mouseleave", handleMouseLeave);
+      }
       if (map.current) {
         map.current.remove();
         map.current = null;
       }
     };
-  }, [polygon]);
+  }, [polygon, style]);
 
   return (
     <div
       ref={miniMapContainer}
-      style={{ width: "90%", height: "150px", borderRadius: "6px" }}
+      style={{ width: "100%", height: "150px", borderRadius: "16px" }}
     />
   );
 };
