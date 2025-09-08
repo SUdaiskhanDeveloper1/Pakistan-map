@@ -1,5 +1,4 @@
 import { scalePolygon } from "../utils/scalePolygon";
-import React, { useEffect, useRef } from "react";
 
 
 export const polygons = {

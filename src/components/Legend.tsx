@@ -1,7 +1,4 @@
 
-import React, { useEffect, useRef } from "react";
-
-
 const Legend = () => {
   return (
     <div className="legend">
