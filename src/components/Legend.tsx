@@ -12,7 +12,7 @@ const Legend = () => {
       </div>
       <div className="legend-item">
         <div className="box exploration"></div>
-        <span>Exploration Lease</span>
+        <span>Explorations Lease</span>
       </div>
     </div>
   );
