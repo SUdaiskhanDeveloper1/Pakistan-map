@@ -1,6 +1,6 @@
 
-export function polygonArea(coordinates) {
-  const ring = coordinates[0];
+export function polygonArea(coordinates: any): number {
+  const ring:any = coordinates[0];
   let area = 0;
   for (let i = 0, len = ring.length - 1; i < len; i++) {
     area += ring[i][0] * ring[i + 1][1];
