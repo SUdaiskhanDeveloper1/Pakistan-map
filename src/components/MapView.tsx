@@ -1,51 +1,60 @@
 import "../App.css";
 import React, { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
+import mapboxgl, { Map, Popup, GeoJSONSource, MapLayerMouseEvent } from "mapbox-gl";
 import { polygons } from "../data/polygons";
 import { scalePolygon } from "../utils/scalePolygon";
 import MiniMap from "./MiniMap";
-import { createRoot } from "react-dom/client";
+import { createRoot, Root } from "react-dom/client";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
-const MapView = () => {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const popupRef = useRef(
-    new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
-  );
-  const [, setHoveredPolygon] = useState(null);
-  const originalPolygons = useRef(polygons);
-  const delayTimeout = useRef(null);
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
+if (!MAPBOX_TOKEN) {
+  throw new Error("Mapbox access token is missing!");
+}
+mapboxgl.accessToken = MAPBOX_TOKEN;
+
+const MapView: React.FC = () => {
+  const mapContainer = useRef<HTMLDivElement | null>(null);
+  const map = useRef<Map | null>(null);
+  const popupRef = useRef<Popup | null>(null);
+  const popupRootRef = useRef<Root | null>(null);
+
+  const [, setHoveredPolygon] = useState<any>(null);
+  const originalPolygons = useRef<any>(polygons);
+  const delayTimeout = useRef<NodeJS.Timeout | null>(null);
   const canShowPopup = useRef(true);
 
   useEffect(() => {
     if (map.current) return;
+
     map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12", 
+      container: mapContainer.current as HTMLElement,
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [71, 30],
       zoom: 4.7,
-      interactive: true, 
+      interactive: true,
     });
 
-    
-    map.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+    map.current.addControl(
+      new mapboxgl.NavigationControl({ showCompass: false }),
+      "top-right"
+    );
 
-   
     setTimeout(() => {
-      const navControl = document.querySelector('.mapboxgl-ctrl-top-right');
+      const navControl = document.querySelector(
+        ".mapboxgl-ctrl-top-right"
+      ) as HTMLElement | null;
       if (navControl) {
-        navControl.style.right = '-2px';
-        navControl.style.top = '-7px';
-        navControl.style.left = 'unset';
+        navControl.style.right = "-2px";
+        navControl.style.top = "-7px";
+        navControl.style.left = "unset";
       }
-    }, 500);
+    }, 100);
 
     map.current.on("load", () => {
       
-      const scaledFeatures = polygons.features.map((f, idx) => {
+      const scaledFeatures = polygons.features.map((f: any) => {
         const coords = f.geometry.coordinates;
         let area = 0;
         if (coords && coords[0] && coords[0].length > 2) {
@@ -66,16 +75,20 @@ const MapView = () => {
         };
       });
 
-      const scaledPolygons = { ...polygons, features: scaledFeatures };
-      map.current.addSource("polygons", {
+      const scaledPolygons = {
+        ...polygons,
+        type: "FeatureCollection" as "FeatureCollection",
+        features: scaledFeatures,
+      };
+
+      map.current!.addSource("polygons", {
         type: "geojson",
         data: scaledPolygons,
       });
 
       originalPolygons.current = scaledPolygons;
 
-      
-      map.current.addLayer({
+      map.current!.addLayer({
         id: "polygon-fill",
         type: "fill",
         source: "polygons",
@@ -85,7 +98,7 @@ const MapView = () => {
         },
       });
 
-      map.current.addLayer({
+      map.current!.addLayer({
         id: "polygon-outline",
         type: "line",
         source: "polygons",
@@ -95,8 +108,7 @@ const MapView = () => {
         },
       });
 
-    
-      map.current.addLayer(
+      map.current!.addLayer(
         {
           id: "polygon-label",
           type: "symbol",
@@ -108,21 +120,20 @@ const MapView = () => {
             "text-anchor": "center",
           },
           paint: {
-            "text-color": "#d32f2f", 
+            "text-color": "#d32f2f",
             "text-halo-color": "#fff",
             "text-halo-width": 1.5,
           },
         },
-        "settlement-label" 
+        "settlement-label"
       );
 
-      
-      map.current.addSource("country-boundaries", {
+      map.current!.addSource("country-boundaries", {
         type: "vector",
         url: "mapbox://mapbox.country-boundaries-v1",
       });
 
-      map.current.addLayer({
+      map.current!.addLayer({
         id: "pakistan-outer-border",
         type: "line",
         source: "country-boundaries",
@@ -131,13 +142,12 @@ const MapView = () => {
         filter: ["==", "iso_3166_1_alpha_3", "PAK"],
       });
 
-      
-      map.current.addSource("admin-boundaries", {
+      map.current!.addSource("admin-boundaries", {
         type: "vector",
         url: "mapbox://mapbox.mapbox-admin-boundaries-v3",
       });
 
-      map.current.addLayer({
+      map.current!.addLayer({
         id: "pakistan-inner-borders",
         type: "line",
         source: "admin-boundaries",
@@ -150,17 +160,16 @@ const MapView = () => {
         filter: ["==", "iso_3166_1", "PK"],
       });
 
-      
-      map.current.addSource("crosshair-x", {
+      map.current!.addSource("crosshair-x", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
-      map.current.addSource("crosshair-y", {
+      map.current!.addSource("crosshair-y", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
 
-      map.current.addLayer({
+      map.current!.addLayer({
         id: "crosshair-x-line",
         type: "line",
         source: "crosshair-x",
@@ -171,7 +180,7 @@ const MapView = () => {
         },
       });
 
-      map.current.addLayer({
+      map.current!.addLayer({
         id: "crosshair-y-line",
         type: "line",
         source: "crosshair-y",
@@ -182,49 +191,37 @@ const MapView = () => {
         },
       });
 
-      
-      map.current.on("mousemove", (e) => {
+      map.current!.on("mousemove", (e) => {
         const { lng, lat } = e.lngLat;
 
-        const xLine = {
+        const xLine: GeoJSON.FeatureCollection<GeoJSON.Geometry> = {
           type: "FeatureCollection",
           features: [
             {
               type: "Feature",
-              geometry: {
-                type: "LineString",
-                coordinates: [
-                  [-180, lat],
-                  [180, lat],
-                ],
-              },
+              geometry: { type: "LineString", coordinates: [[-180, lat], [180, lat]] },
+              properties: {},
             },
           ],
         };
 
-        const yLine = {
+        const yLine: GeoJSON.FeatureCollection<GeoJSON.Geometry> = {
           type: "FeatureCollection",
           features: [
             {
               type: "Feature",
-              geometry: {
-                type: "LineString",
-                coordinates: [
-                  [lng, -90],
-                  [lng, 90],
-                ],
-              },
+              geometry: { type: "LineString", coordinates: [[lng, -90], [lng, 90]] },
+              properties: {},
             },
           ],
         };
 
-        map.current.getSource("crosshair-x").setData(xLine);
-        map.current.getSource("crosshair-y").setData(yLine);
+        (map.current!.getSource("crosshair-x") as GeoJSONSource).setData(xLine);
+        (map.current!.getSource("crosshair-y") as GeoJSONSource).setData(yLine);
       });
 
-     
-      map.current.on("mousemove", "polygon-fill", (e) => {
-        if (!e.features.length) return;
+      map.current!.on("mousemove", "polygon-fill", (e: MapLayerMouseEvent) => {
+        if (!e.features?.length) return;
         if (!canShowPopup.current) return;
         const feature = e.features[0];
 
@@ -233,23 +230,41 @@ const MapView = () => {
           delayTimeout.current = null;
         }
 
-        setHoveredPolygon((prev) => {
+        setHoveredPolygon((prev: any) => {
           if (prev && prev.id === feature.id) return prev;
 
+          
+          if (popupRootRef.current) {
+            popupRootRef.current.unmount();
+            popupRootRef.current = null;
+          }
+          if (popupRef.current) {
+            popupRef.current.remove();
+            popupRef.current = null;
+          }
+
+          popupRef.current = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
           popupRef.current
             .setLngLat(e.lngLat)
             .setHTML(
               '<div id="popup-container" style="width:220px;height:180px"></div>'
             )
-            .addTo(map.current);
-         
+            .addTo(map.current!);
+
           const container = document.getElementById("popup-container");
           if (container) {
             const root = createRoot(container);
-            const coords = feature.geometry.coordinates;
-            const miniPolygon = {
+            popupRootRef.current = root;
+            let coords: any = [];
+            if (
+              feature.geometry.type === "Polygon" ||
+              feature.geometry.type === "MultiPolygon"
+            ) {
+              coords = (feature.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon).coordinates;
+            }
+            const miniPolygon: GeoJSON.Feature<GeoJSON.Polygon> = {
               type: "Feature",
-              properties: { name: feature.properties.name, color: "black" },
+              properties: { name: feature.properties?.name, color: "black" },
               geometry: {
                 type: "Polygon",
                 coordinates: scalePolygon(coords, 0.02),
@@ -257,8 +272,11 @@ const MapView = () => {
             };
             root.render(
               <div>
-                <h3>{feature.properties.name}</h3>
-                <MiniMap polygon={miniPolygon} style="mapbox://styles/mapbox/streets-v10" />
+                <h3>{feature.properties?.name}</h3>
+                <MiniMap
+                  polygon={miniPolygon}
+                  mapStyle="mapbox://styles/mapbox/streets-v10"
+                />
               </div>
             );
           }
@@ -266,10 +284,19 @@ const MapView = () => {
         });
       });
 
-      map.current.on("mouseleave", "polygon-fill", () => {
-        popupRef.current.remove();
+      map.current!.on("mouseleave", "polygon-fill", () => {
+        if (popupRef.current) {
+          popupRef.current.remove();
+          popupRef.current = null;
+        }
+        if (popupRootRef.current) {
+          popupRootRef.current.unmount();
+          popupRootRef.current = null;
+        }
         setHoveredPolygon(null);
-        map.current.getSource("polygons").setData(originalPolygons.current);
+        (map.current!.getSource("polygons") as GeoJSONSource).setData(
+          originalPolygons.current
+        );
 
         canShowPopup.current = false;
         delayTimeout.current = setTimeout(() => {
@@ -278,28 +305,46 @@ const MapView = () => {
         }, 1000);
       });
 
-   
-      const settlementLayer = map.current.getStyle().layers.find(
+      const settlementLayer = map.current!.getStyle().layers?.find(
         (l) => l.id === "settlement-label"
       );
 
       if (settlementLayer) {
-        map.current.setLayoutProperty("settlement-label", "text-size", [
+        map.current!.setLayoutProperty("settlement-label", "text-size", [
           "interpolate",
           ["linear"],
           ["zoom"],
-          4, 10, 
-          8, 14, 
-          12, 18 
+          4, 10,
+          8, 14,
+          12, 18,
         ]);
 
-       
-        map.current.setFilter("settlement-label", [
+        map.current!.setFilter("settlement-label", [
           "all",
-          ["==", ["get", "iso_3166_1"], "PK"]
+          ["==", ["get", "iso_3166_1"], "PK"],
         ]);
       }
     });
+
+    
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+      if (popupRef.current) {
+        popupRef.current.remove();
+        popupRef.current = null;
+      }
+      if (popupRootRef.current) {
+        popupRootRef.current.unmount();
+        popupRootRef.current = null;
+      }
+      if (delayTimeout.current) {
+        clearTimeout(delayTimeout.current);
+        delayTimeout.current = null;
+      }
+    };
   }, []);
 
   return <div ref={mapContainer} style={{ width: "100%", height: "100vh" }} />;

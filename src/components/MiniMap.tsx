@@ -1,11 +1,20 @@
 import React, { useEffect, useRef } from "react";
-import mapboxgl from "mapbox-gl";
+import mapboxgl, { Map, LngLatBoundsLike } from "mapbox-gl";
 
-mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
+export interface MiniMapProps {
+  polygon: GeoJSON.Feature<GeoJSON.Polygon>;
+  mapStyle: string;
+  style?: string;
+}
 
-const MiniMap = ({ polygon, style = "mapbox://styles/mapbox/streets-v10" }) => {
-  const miniMapContainer = useRef(null);
-  const map = useRef(null);
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN as string;
+
+const MiniMap: React.FC<MiniMapProps> = ({
+  polygon,
+  style = "mapbox://styles/mapbox/streets-v10",
+}) => {
+  const miniMapContainer = useRef<HTMLDivElement | null>(null);
+  const map = useRef<Map | null>(null);
 
   useEffect(() => {
     if (!polygon) return;
@@ -16,14 +25,18 @@ const MiniMap = ({ polygon, style = "mapbox://styles/mapbox/streets-v10" }) => {
     }
 
     map.current = new mapboxgl.Map({
-      container: miniMapContainer.current,
-      style: style, 
+      container: miniMapContainer.current as HTMLDivElement,
+      style: style,
       interactive: false,
     });
 
     map.current.on("load", () => {
-      map.current.addSource("mini-polygon", { type: "geojson", data: polygon });
-      map.current.addLayer({
+      map.current?.addSource("mini-polygon", {
+        type: "geojson",
+        data: polygon,
+      });
+
+      map.current?.addLayer({
         id: "mini-polygon-fill",
         type: "fill",
         source: "mini-polygon",
@@ -33,42 +46,44 @@ const MiniMap = ({ polygon, style = "mapbox://styles/mapbox/streets-v10" }) => {
         },
       });
 
-      const bounds = polygon.geometry.coordinates[0].reduce(
-        (b, coord) => b.extend(coord),
+      const coords = polygon.geometry.coordinates[0];
+      const bounds = coords.reduce(
+        (b, coord) => b.extend(coord as [number, number]),
         new mapboxgl.LngLatBounds(
-          polygon.geometry.coordinates[0][0],
-          polygon.geometry.coordinates[0][0]
+          coords[0] as [number, number],
+          coords[0] as [number, number]
         )
       );
-      map.current.fitBounds(bounds, { padding: 70 });
+
+      map.current?.fitBounds(bounds, { padding: 70 });
     });
 
     const handleMouseEnter = () => {
       if (map.current) {
         const maxZoom = map.current.getMaxZoom ? map.current.getMaxZoom() : 22;
-        map.current.zoomTo(maxZoom, { duration: 900 }); 
+        map.current.zoomTo(maxZoom, { duration: 900 });
       }
     };
-    
+
     const handleMouseLeave = () => {
-      if (map.current) {
-        const bounds = polygon.geometry.coordinates[0].reduce(
-          (b, coord) => b.extend(coord),
+      if (map.current && polygon) {
+        const coords = polygon.geometry.coordinates[0];
+        const bounds = coords.reduce(
+          (b, coord) => b.extend(coord as [number, number]),
           new mapboxgl.LngLatBounds(
-            polygon.geometry.coordinates[0][0],
-            polygon.geometry.coordinates[0][0]
+            coords[0] as [number, number],
+            coords[0] as [number, number]
           )
         );
         map.current.fitBounds(bounds, { padding: 70 });
       }
     };
-    
+
     const container = miniMapContainer.current;
     if (container) {
       container.addEventListener("mouseenter", handleMouseEnter);
       container.addEventListener("mouseleave", handleMouseLeave);
     }
-
     return () => {
       if (container) {
         container.removeEventListener("mouseenter", handleMouseEnter);
