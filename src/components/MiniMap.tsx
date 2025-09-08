@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import mapboxgl, { Map, LngLatBoundsLike } from "mapbox-gl";
+import mapboxgl, { Map  } from "mapbox-gl";
 
 export interface MiniMapProps {
   polygon: GeoJSON.Feature<GeoJSON.Polygon>;
